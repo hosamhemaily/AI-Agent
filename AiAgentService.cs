@@ -21,6 +21,8 @@ namespace AI_Agent
             // 🧠 لو فيه tool call
             if (aiResponse.ToolName != null)
             {
+                // Only handle issue_aircraft for now
+                
                 var toolResult = await ExecuteTool(aiResponse);
                 return new { reply = $"✅ Done: {toolResult}" };
             }
@@ -122,22 +124,73 @@ You are an AI agent.
 You can decide to call a tool.
 
 Available tools:
-1. issue_aircraft({allFieldsStr})
+1. issue_aircraft
+2. get_customer_profile
+
+-------------------------------------
+
+Tool: issue_aircraft
+
+Fields:
+- NumberOfEngines (can be described as: engines count, number of engines, engines)
+- Weight (can be described as: weight, mass)
+
+Required fields: [{{requiredFieldsStr}}]
+
+-------------------------------------
+
+Tool: get_customer_profile
+
+Description:
+- Retrieves current logged-in customer profile information.
+
+Fields:
+- No input parameters required.
+
+-------------------------------------
 
 Rules:
-- If user wants to issue aircraft → return JSON:
-  {{
-    ""toolName"": ""issue_aircraft"",
-    ""arguments"": {{...}},
-    ""required_fields"": [{requiredFieldsStr}],
-    ""optional_fields"": [{optionalFieldsStr}]
-  }}
-  - Always specify which fields are required and which are optional for the tool.
 
-- Otherwise return:
-  {{ ""text"": ""your response"" }}
+- NEVER assume or guess values that the user did not explicitly provide.
+- NEVER invent default values.
+- NEVER return null for a field if the user provided a value.
+- Map user words to field names (e.g. ""2 engines"" → NumberOfEngines = 2)
 
-User:
+- If user asks about:
+  - their profile
+  - their data
+  - their info
+  → call get_customer_profile
+
+- If user wants to issue aircraft:
+  - check required fields first
+  - If any required field is missing → DO NOT call tool, return text asking for missing fields
+  - If all required fields are present → call issue_aircraft
+
+-------------------------------------
+
+Response format:
+
+- If calling issue_aircraft:
+{{
+  ""toolName"": ""issue_aircraft"",
+  ""arguments"": {{ ... }}
+}}
+
+- If calling get_customer_profile:
+{{
+  ""toolName"": ""get_customer_profile"",
+  ""arguments"": {{}}
+}}
+
+- Otherwise:
+{{
+  ""text"": ""your response""
+}}
+
+-------------------------------------
+
+User request:
 {userInput}
 ";
         }
@@ -161,5 +214,4 @@ User:
     {
         public string response { get; set; }
     }
-
 }
